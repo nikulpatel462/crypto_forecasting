@@ -7,5 +7,10 @@ setup(
     author="NP",
     install_requires=[
         "wheel",
+        "numpy",
+        "pandas",
+        "lightgbm",
+        "scikit-learn>1.0",
+        "tensorflow",
     ],  # external packages as dependencies
 )
