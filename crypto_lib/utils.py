@@ -1,11 +1,16 @@
 """General utility functions for manipulating data"""
 
 import time
+import os
+import logging
+import pickle
 from datetime import datetime
 from functools import reduce
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def linear_weighting(timestamps, end_weight=0.1):
@@ -61,6 +66,43 @@ def replace_missing_data(df, value):
     """Replaces [np.inf, -np.inf, np.nan] with the given value (which can also
     be np.nan) on the givn df in-place"""
     df.replace([np.inf, -np.inf, np.nan], value, inplace=True)
+
+
+class ResultCacher:
+    """Helper class to pickle and load a series of results to a given directory.
+
+    Note: saves as pickles rather than eg parquet for low RAM requirements when reading files
+    and for low file sizes (compared to csv).
+    """
+
+    def __init__(self, save_path):
+        self.save_path = save_path  # directory to cache intermediate results
+        self.result_paths = []  # to keep track of cached files
+
+        self.create_save_folder()
+
+    def create_save_folder(self):
+        os.makedirs(self.save_path)
+
+    def get_save_path(self, filename):
+        return os.path.join(self.save_path, filename)
+
+    def cache_result(self, result, filename):
+        """Pickles result to given filename in save_path"""
+        file_save_path = self.get_save_path(filename)
+        logger.info(f"Saving result to {file_save_path}")
+        with open(file_save_path, "wb") as f:
+            pickle.dump(result, f)
+
+        self.result_paths.append(file_save_path)
+
+    def load_all_results(self):
+        """Loads all cached results and returns as a list"""
+        results = []
+        for path in self.result_paths:
+            with open(path, "rb") as f:
+                results.append(pickle.load(f))
+        return results  # FIXME: does not clean up cached files
 
 
 # def dicts_to_long_df(feat_dict):
